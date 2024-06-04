@@ -2,4 +2,5 @@ flask
 pillow 
 sentence-transformers
 torch
-googletrans
+googletrans==4.0.0-rc.1
+pytest
