@@ -1,19 +1,16 @@
-import requests
+# test_app.py
+import pytest
+from flask_testing import TestCase
+from api_server import app  # Adjust the import according to your app structure
 
-# Flask 앱의 엔드포인트 주소
-url = 'http://localhost:5010/generate-and-send-image'
+class MyTest(TestCase):
+    def create_app(self):
+        app.config['TESTING'] = True
+        return app
 
-# 요청할 텍스트 데이터
-data = {
-    "text": ""
-}
+    def test_image_generation(self):
+        response = self.client.get('/generate-and-send-image/dog,cat,cloud')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type, 'image/png')
 
-# POST 요청으로 이미지 요청
-response = requests.post(url, json=data)
-
-if response.status_code == 200:
-    # 이미지 파일로 저장
-    with open('received_image_2.png', 'wb') as f:
-        f.write(response.content)
-else:
-    print("Failed to receive image:", response.content)
+# Run tests with pytest

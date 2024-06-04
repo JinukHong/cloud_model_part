@@ -1,37 +1,47 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, jsonify
 import requests
 from PIL import Image
 import io
 import os
-import jsonify
+from googletrans import Translator
+
 
 app = Flask(__name__)
+translator = Translator()
 
 # OpenAI API key
 API_KEY = os.getenv('OPENAI_API_KEY')
 
 @app.route('/generate-and-send-image/<texts>', methods=['GET'])
 def generate_and_send_image(texts):
+    if not texts or texts.strip() == '':
+        return jsonify({'error': 'Missing or invalid text data in request'}), 400
+
     words = texts.split(',')
+    if not all(words):  # 빈 문자열이 있는지 확인
+        return jsonify({'error': 'Empty words are not allowed'}), 400
+    
     words = [word.strip() for word in words]
-    prompt = "Create an image that clearly shows all of these elements: " + ", ".join(words)
-    print(prompt)
+    # Translate words to English
+    translated_words = [translator.translate(word, dest='en').text for word in words]
+    prompt = "Create an image that clearly shows all of these elements: " + ", ".join(translated_words)
+    print("Translated prompt: ", prompt)
     
     image_url = create_image_from_text(prompt)
     if not image_url:
         return jsonify({'error': 'Failed to generate image'}), 500
 
-    # 이미지를 메모리에 로드
+    # Load the image into memory
     image_response = requests.get(image_url)
     image = Image.open(io.BytesIO(image_response.content))
     
-    # 이미지를 바이트로 변환
+    # Convert image to byte array
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='PNG')
     img_byte_arr.seek(0)
 
-    # 바이트 스트림을 응답으로 전송
-    return send_file(img_byte_arr, mimetype='image/png', as_attachment=True, download_name=f'{", ".join(words)}_image.png')
+    # Send the byte stream as a response
+    return send_file(img_byte_arr, mimetype='image/png', as_attachment=True, download_name=f'{", ".join(translated_words)}_image.png')
 
 def create_image_from_text(prompt):
     headers = {
