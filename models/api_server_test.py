@@ -1,11 +1,11 @@
 import requests
 
 # Flask 앱의 엔드포인트 주소
-url = 'http://172.22.145.8:5001/generate-and-send-image'
+url = 'http://localhost:5010/generate-and-send-image'
 
 # 요청할 텍스트 데이터
 data = {
-    "text": "A futuristic city skyline at night"
+    "text": ""
 }
 
 # POST 요청으로 이미지 요청

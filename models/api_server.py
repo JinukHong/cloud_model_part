@@ -3,22 +3,23 @@ import requests
 from PIL import Image
 import io
 import os
+import jsonify
 
 app = Flask(__name__)
 
 # OpenAI API key
 API_KEY = os.getenv('OPENAI_API_KEY')
 
-@app.route('/generate-and-send-image', methods=['POST'])
-def generate_and_send_image():
-    if not request.json or 'text' not in request.json:
-        return {'error': 'Missing text data in request'}, 400
-
-    text = request.json['text']
-    image_url = create_image_from_text(text)
+@app.route('/generate-and-send-image/<texts>', methods=['GET'])
+def generate_and_send_image(texts):
+    words = texts.split(',')
+    words = [word.strip() for word in words]
+    prompt = "Create an image that clearly shows all of these elements: " + ", ".join(words)
+    print(prompt)
     
+    image_url = create_image_from_text(prompt)
     if not image_url:
-        return {'error': 'Failed to generate image'}, 500
+        return jsonify({'error': 'Failed to generate image'}), 500
 
     # 이미지를 메모리에 로드
     image_response = requests.get(image_url)
@@ -30,15 +31,15 @@ def generate_and_send_image():
     img_byte_arr.seek(0)
 
     # 바이트 스트림을 응답으로 전송
-    return send_file(img_byte_arr, mimetype='image/png', as_attachment=True, download_name='generated_image.png')
+    return send_file(img_byte_arr, mimetype='image/png', as_attachment=True, download_name=f'{", ".join(words)}_image.png')
 
-def create_image_from_text(text):
+def create_image_from_text(prompt):
     headers = {
         'Authorization': f'Bearer {API_KEY}',
         'Content-Type': 'application/json',
     }
     data = {
-        "prompt": "Create an image that clearly shows all of these elements: " + ", ".join(text),
+        "prompt": prompt,
         "n": 1,
         "size": "1024x1024"
     }
@@ -49,5 +50,4 @@ def create_image_from_text(text):
     return None
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
-
+    app.run(host='0.0.0.0', port=5010, debug=True)
